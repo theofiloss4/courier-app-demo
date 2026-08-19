@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+<!--
+  Public, no-login-required tracking entry form (see tracking_page in
+  app/routers/tracking.py). Also re-rendered by tracking_result with an
+  `error` message when a submitted tracking number was not found, so
+  visitors can immediately retry without navigating away.
+-->
+{% block title %}{{ "Αναζήτηση αποστολής" if current_lang == "el" else "Track shipment" }} - Courier App Demo{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="card tracking-card p-4 p-md-5 mx-auto" style="max-width: 720px;">
+        <h1 class="fw-bold">{{ "Παρακολούθηση αποστολής" if current_lang == "el" else "Track your shipment" }}</h1>
+        <p class="text-secondary">{{ "Εισαγάγετε τον αριθμό tracking της αποστολής." if current_lang == "el" else "Enter your shipment tracking number." }}</p>
+        {% if error %}<div class="alert alert-warning">{{ error }}</div>{% endif %}
+        <form class="row g-2 mt-2" onsubmit="event.preventDefault(); window.location='/track/' + encodeURIComponent(this.tracking.value.trim())">
+            <div class="col-md-8">
+                <label class="visually-hidden" for="tracking">{{ "Αριθμός tracking" if current_lang == "el" else "Tracking number" }}</label>
+                <input class="form-control form-control-lg" id="tracking" name="tracking" required>
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-success btn-lg w-100" type="submit">{{ "Αναζήτηση" if current_lang == "el" else "Track" }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

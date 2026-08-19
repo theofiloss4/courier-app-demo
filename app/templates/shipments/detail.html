@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+<!--
+  Staff shipment detail page: full route/parcel info, the tracking-event
+  timeline, print voucher/receipt links, resend-email button, and (unless
+  the shipment is in a final state) the status-update form. Reached both
+  right after creating a shipment (with ?created=1&email=<status> query
+  flags - see create_shipment's docstring in app/routers/shipments.py) and
+  by navigating in from the shipment list.
+-->
+{% block title %}{{ shipment.tracking_number }} - Courier App Demo{% endblock %}
+{% block content %}
+<div class="container py-5">
+    {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+    {% if request.query_params.get('created') %}
+    <div class="alert alert-success d-flex justify-content-between align-items-center">
+        <span>{{ "Η αποστολή και το voucher δημιουργήθηκαν." if current_lang == "el" else "The shipment and voucher were created." }}</span>
+    </div>
+    {% endif %}
+    <!-- Reflects the EmailDeliveryStatus enum value from
+         app/services/email_service.py back as a one-time banner, so staff
+         immediately know whether the voucher email actually went out. -->
+    {% set email_result = request.query_params.get('email') %}
+    {% if email_result == 'sent' %}
+    <div class="alert alert-success">{{ "Το email του voucher στάλθηκε." if current_lang == "el" else "The voucher email was sent." }}</div>
+    {% elif email_result == 'failed' %}
+    <div class="alert alert-warning">{{ "Η αποστολή email απέτυχε. Μπορείτε να δοκιμάσετε ξανά." if current_lang == "el" else "Email delivery failed. You can try again." }}</div>
+    {% elif email_result == 'not_configured' %}
+    <div class="alert alert-warning">{{ "Δεν έχει ρυθμιστεί SMTP. Εκτυπώστε το voucher ή ρυθμίστε το email." if current_lang == "el" else "SMTP is not configured. Print the voucher or configure email." }}</div>
+    {% endif %}
+    <a href="/shipments" class="text-secondary text-decoration-none">&larr; {{ "Επιστροφή στις αποστολές" if current_lang == "el" else "Back to shipments" }}</a>
+    <div class="d-flex justify-content-between align-items-start mt-3 mb-4">
+        <div>
+            <p class="text-secondary mb-1">{{ "Αριθμός tracking" if current_lang == "el" else "Tracking number" }}</p>
+            <h1 class="fw-bold">{{ shipment.tracking_number }}</h1>
+        </div>
+        <span class="status-badge">{{ status_labels.get(shipment.status, shipment.status.value) }}</span>
+    </div>
+    <div class="d-flex gap-2 mb-4">
+        <a class="btn btn-success" href="/shipments/{{ shipment.id }}/voucher" target="_blank">{{ "Εκτύπωση sticker / voucher" if current_lang == "el" else "Print sticker / voucher" }}</a>
+        <a class="btn btn-outline-secondary" href="/shipments/{{ shipment.id }}/receipt" target="_blank">{{ "Εκτύπωση αποδεικτικού" if current_lang == "el" else "Print receipt" }}</a>
+        <form method="post" action="/shipments/{{ shipment.id }}/email">
+            <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+            <button class="btn btn-outline-secondary" type="submit">{{ "Επαναποστολή email" if current_lang == "el" else "Resend email" }}</button>
+        </form>
+    </div>
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card content-card p-4">
+                <h2 class="h5 fw-bold">{{ "Στοιχεία διαδρομής" if current_lang == "el" else "Route details" }}</h2>
+                <hr>
+                <p><strong>{{ "Διεύθυνση αποστολέα:" if current_lang == "el" else "Sender address:" }}</strong> {{ shipment.sender_address }}</p>
+                <p><strong>{{ "Προς:" if current_lang == "el" else "To:" }}</strong> {{ shipment.delivery_address }}</p>
+                <p><strong>{{ "Αποστολέας:" if current_lang == "el" else "Sender:" }}</strong> {{ shipment.sender_name }} &middot; {{ shipment.sender_phone }}</p>
+                <p><strong>{{ "Παραλήπτης:" if current_lang == "el" else "Recipient:" }}</strong> {{ shipment.recipient_name }} &middot; {{ shipment.recipient_phone }}</p>
+                <p><strong>Email:</strong> {{ shipment.sender_email }}</p>
+                <p><strong>{{ "Διαστάσεις:" if current_lang == "el" else "Dimensions:" }}</strong> {{ shipment.length_cm }} × {{ shipment.width_cm }} × {{ shipment.height_cm }} cm</p>
+                <p><strong>{{ "Βάρος:" if current_lang == "el" else "Weight:" }}</strong> {{ "%.2f"|format(shipment.weight_kg) }} kg · <strong>{{ "Ογκομετρικό:" if current_lang == "el" else "Volumetric:" }}</strong> {{ "%.2f"|format(shipment.volumetric_weight_kg) }} kg · <strong>{{ "Χρεώσιμο:" if current_lang == "el" else "Chargeable:" }}</strong> {{ "%.2f"|format(shipment.chargeable_weight_kg) }} kg</p>
+                <p><strong>{{ "Ενδεικτική χρέωση:" if current_lang == "el" else "Indicative charge:" }}</strong> {{ "%.2f"|format(shipment.amount_eur) }} €</p>
+                <p class="small text-secondary mb-0">{{ "Η πληρωμή πραγματοποιείται στο εξωτερικό POS του καταστήματος και δεν αποθηκεύεται στην εφαρμογή." if current_lang == "el" else "Payment is completed using the store's external POS and is not stored in the application." }}</p>
+            </div>
+            <div class="card content-card p-4 mt-4">
+                <h2 class="h5 fw-bold mb-4">{{ "Ιστορικό αποστολής" if current_lang == "el" else "Shipment history" }}</h2>
+                <div class="timeline">
+                    {% for event in events %}
+                    <div class="timeline-item">
+                        <div class="fw-semibold">{{ status_labels.get(event.status, event.status.value) }}</div>
+                        {% if event.location %}<div>{{ event.location }}</div>{% endif %}
+                        {% if event.description %}<div class="text-secondary">{{ event.description }}</div>{% endif %}
+                        <small class="text-secondary">{{ event.created_at.strftime("%d %b %Y, %H:%M") }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card content-card p-4">
+                <h2 class="h5 fw-bold">{{ "Ενημέρωση κατάστασης" if current_lang == "el" else "Update status" }}</h2>
+                {% if statuses %}
+                <form method="post" action="/shipments/{{ shipment.id }}/status">
+                    <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+                    <div class="mb-3">
+                        <label class="form-label" for="new_status">{{ "Νέα κατάσταση" if current_lang == "el" else "New status" }}</label>
+                        <select class="form-select" id="new_status" name="new_status" required>
+                            {% for status in statuses %}
+                            <option value="{{ status.value }}">{{ status_labels.get(status, status.value) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="location">{{ "Τοποθεσία" if current_lang == "el" else "Location" }}</label>
+                        <input class="form-control" id="location" name="location">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="description">{{ "Περιγραφή" if current_lang == "el" else "Description" }}</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    <button class="btn btn-success w-100" type="submit">{{ "Ενημέρωση αποστολής" if current_lang == "el" else "Update shipment" }}</button>
+                </form>
+                {% else %}
+                <p class="text-secondary mb-0">{{ "Η αποστολή βρίσκεται σε τελική κατάσταση και δεν επιτρέπεται άλλη αλλαγή." if current_lang == "el" else "The shipment is in a final state and no further change is allowed." }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

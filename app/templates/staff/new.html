@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+<!--
+  "Create a staff account" form (Admin/Supervisor only - see staff_form in
+  app/routers/accounts.py). The `roles` list in the <select> below is
+  computed server-side per viewer: an Admin only sees "Employee" as an
+  option, a Supervisor also sees "Admin" - Supervisor cannot be created
+  through this form at all, only through the one-time /setup route.
+-->
+{% block title %}{{ "Νέος λογαριασμός προσωπικού" if current_lang == "el" else "New staff account" }}{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="card content-card mx-auto p-4" style="max-width: 520px;"><div class="card-body">
+        <h1 class="h3 fw-bold mb-4">{{ "Νέος λογαριασμός προσωπικού" if current_lang == "el" else "New staff account" }}</h1>
+        {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+        <form method="post" action="/staff">
+            <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+            <label class="form-label" for="full_name">{{ "Ονοματεπώνυμο" if current_lang == "el" else "Full name" }}</label>
+            <input class="form-control mb-3" id="full_name" name="full_name" minlength="2" maxlength="120" value="{{ form_data.full_name if form_data else '' }}" required>
+            <label class="form-label" for="email">Email</label>
+            <input class="form-control mb-3" id="email" name="email" type="email" value="{{ form_data.email if form_data else '' }}" required>
+            <label class="form-label" for="password">{{ "Προσωρινός κωδικός" if current_lang == "el" else "Temporary password" }}</label>
+            <input class="form-control mb-3" id="password" name="password" type="password" minlength="8" required>
+            <label class="form-label" for="role">{{ "Ρόλος" if current_lang == "el" else "Role" }}</label>
+            <select class="form-select mb-4" id="role" name="role">
+                {% for role in roles %}
+                <option value="{{ role.value }}">
+                    {% if role.value == "employee" %}{{ "Υπάλληλος" if current_lang == "el" else "Employee" }}
+                    {% elif role.value == "admin" %}{{ "Διαχειριστής" if current_lang == "el" else "Admin" }}
+                    {% else %}{{ role.value }}{% endif %}
+                </option>
+                {% endfor %}
+            </select>
+            <button class="btn btn-success w-100">{{ "Δημιουργία λογαριασμού" if current_lang == "el" else "Create account" }}</button>
+        </form>
+    </div></div>
+</div>
+{% endblock %}

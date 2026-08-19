@@ -1,0 +1,27 @@
+<!doctype html>
+<!--
+  Print-oriented parcel voucher/sticker, sized for a small label printer
+  (@page 100mm x 150mm below). Deliberately does NOT extend base.html - it
+  has no site navigation, since it is meant to be printed and physically
+  attached to a parcel, not browsed. The .actions button (hidden via the
+  @media print rule further down) triggers the browser's native print
+  dialog with plain JavaScript.
+-->
+<html lang="el"><head><meta charset="utf-8"><title>Voucher {{ shipment.tracking_number }}</title>
+<style>
+@page { size: 100mm 150mm; margin: 5mm; }
+body { font-family: Arial, sans-serif; margin: 0; color: #111; }
+.voucher { border: 3px solid #111; padding: 12px; }
+h1 { margin: 0; font-size: 22px; } .tracking { font-size: 24px; font-weight: 800; letter-spacing: 2px; text-align: center; padding: 14px 0; border: 2px solid #111; margin: 12px 0; }
+.row { border-top: 1px solid #999; padding: 7px 0; } .label { font-size: 11px; color: #555; } .value { font-size: 15px; font-weight: 700; }
+.actions { margin: 15px 0; } @media print { .actions { display: none; } }
+</style></head><body>
+<div class="actions"><button onclick="window.print()">Εκτύπωση / Print</button></div>
+<div class="voucher">
+<h1>Courier App Demo</h1>
+<div class="tracking">{{ shipment.tracking_number }}</div>
+<div class="row"><div class="label">ΑΠΟΣΤΟΛΕΑΣ / SENDER</div><div class="value">{{ shipment.sender_name }}</div><div>{{ shipment.sender_phone }}</div></div>
+<div class="row"><div class="label">ΠΑΡΑΛΗΠΤΗΣ / RECIPIENT</div><div class="value">{{ shipment.recipient_name }}</div><div>{{ shipment.recipient_phone }}</div></div>
+<div class="row"><div class="label">ΠΑΡΑΔΟΣΗ / DELIVERY</div><div class="value">{{ shipment.delivery_address }}</div></div>
+<div class="row"><div class="label">ΔΕΜΑ / PARCEL</div><div>{{ shipment.length_cm }} × {{ shipment.width_cm }} × {{ shipment.height_cm }} cm · {{ "%.2f"|format(shipment.chargeable_weight_kg) }} kg</div><div>{{ shipment.parcel_description or "" }}</div></div>
+</div></body></html>

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+<!--
+  Customer dashboard: profile edit form, change-password form, and the
+  table of shipments linked to this account (see customer_dashboard in
+  app/routers/accounts.py). The password_error/password_changed banners
+  below read plain query-string flags set by change_customer_password's
+  redirect targets ("?password_error=1" / "?password_changed=1"), a simple
+  "flash message" pattern using the URL instead of server-side session state.
+-->
+{% block title %}{{ "Ο λογαριασμός μου" if current_lang == "el" else "My account" }} - Courier App Demo{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <h1 class="fw-bold mb-4">{{ "Ο λογαριασμός μου" if current_lang == "el" else "My account" }}</h1>
+    {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+    {% if request.query_params.get('password_error') %}<div class="alert alert-danger">{{ "Ο τρέχων κωδικός είναι λάθος ή ο νέος δεν καλύπτει τους κανόνες." if current_lang == "el" else "The current password is wrong or the new password does not meet the rules." }}</div>{% endif %}
+    {% if request.query_params.get('password_changed') %}<div class="alert alert-success">{{ "Ο κωδικός άλλαξε." if current_lang == "el" else "Password changed." }}</div>{% endif %}
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card content-card p-4 h-100">
+                <h2 class="h4 fw-bold">{{ "Αποθηκευμένα στοιχεία" if current_lang == "el" else "Saved details" }}</h2>
+                <form method="post" action="/account/profile">
+                    <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+                    <label class="form-label mt-3" for="full_name">{{ "Ονοματεπώνυμο" if current_lang == "el" else "Full name" }}</label>
+                    <input class="form-control" id="full_name" name="full_name" minlength="2" maxlength="120" value="{{ user.full_name }}" required>
+                    <label class="form-label mt-3" for="phone">{{ "Τηλέφωνο" if current_lang == "el" else "Phone" }}</label>
+                    <input class="form-control" id="phone" name="phone" inputmode="tel" maxlength="20" value="{{ user.phone or '' }}" required>
+                    <label class="form-label mt-3" for="address">{{ "Διεύθυνση" if current_lang == "el" else "Address" }}</label>
+                    <input class="form-control" id="address" name="address" minlength="5" maxlength="255" value="{{ user.address or '' }}" required>
+                    <button class="btn btn-success mt-4">{{ "Αποθήκευση" if current_lang == "el" else "Save" }}</button>
+                </form>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card content-card p-4 h-100">
+                <h2 class="h4 fw-bold">{{ "Εξυπηρέτηση στο κατάστημα" if current_lang == "el" else "In-store service" }}</h2>
+                <p class="text-secondary">{{ "Η αποστολή ή παραλαβή δέματος πραγματοποιείται στο κατάστημα. Ο υπάλληλος ζυγίζει, ογκομετρεί και εκδίδει το voucher." if current_lang == "el" else "Parcels are sent or collected at the store. Staff weigh, measure, and issue the voucher." }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="card content-card p-4 mt-4">
+        <h2 class="h4 fw-bold">{{ "Αλλαγή κωδικού" if current_lang == "el" else "Change password" }}</h2>
+        <form class="row g-3" method="post" action="/account/password">
+            <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+            <div class="col-md-5"><input class="form-control" name="current_password" type="password" placeholder="{{ 'Τρέχων κωδικός' if current_lang == 'el' else 'Current password' }}" required></div>
+            <div class="col-md-5"><input class="form-control" name="new_password" type="password" minlength="8" placeholder="{{ 'Νέος κωδικός' if current_lang == 'el' else 'New password' }}" required></div>
+            <div class="col-md-2"><button class="btn btn-outline-secondary w-100">{{ "Αλλαγή" if current_lang == "el" else "Change" }}</button></div>
+        </form>
+    </div>
+    <h2 class="h3 fw-bold mt-5">{{ "Οι αποστολές μου" if current_lang == "el" else "My shipments" }}</h2>
+    <!-- `shipments` comes from ShipmentRepository.list_for_customer -
+         only shipments explicitly linked to this account's customer_id,
+         never every shipment in the system. -->
+    <div class="card content-card mt-3"><div class="table-responsive"><table class="table mb-0">
+        <thead><tr><th>Tracking</th><th>{{ "Παραλήπτης" if current_lang == "el" else "Recipient" }}</th><th>{{ "Κατάσταση" if current_lang == "el" else "Status" }}</th></tr></thead>
+        <tbody>{% for shipment in shipments %}
+        <tr><td><a href="/track/{{ shipment.tracking_number }}">{{ shipment.tracking_number }}</a></td><td>{{ shipment.recipient_name }}</td><td>{{ status_labels.get(shipment.status, shipment.status.value) }}</td></tr>
+        {% else %}<tr><td colspan="3" class="text-center py-4 text-secondary">{{ "Δεν υπάρχουν συνδεδεμένες αποστολές." if current_lang == "el" else "No linked shipments yet." }}</td></tr>{% endfor %}</tbody>
+    </table></div></div>
+</div>
+{% endblock %}

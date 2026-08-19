@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+<!-- Authentication form that submits customer and staff credentials to the login route. -->
+{% block title %}{{ "Σύνδεση" if current_lang == "el" else "Log in" }} - Courier App Demo{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="card content-card mx-auto p-4" style="max-width: 460px;">
+        <div class="card-body">
+            <h1 class="h3 fw-bold mb-2">{{ "Σύνδεση" if current_lang == "el" else "Log in" }}</h1>
+            <p class="text-secondary mb-4">{{ "Σύνδεση πελατών και προσωπικού." if current_lang == "el" else "Customer and staff access." }}</p>
+            {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+            <!-- Every state-changing POST form in this app repeats this
+                 same pattern: a hidden csrf_token field whose value comes
+                 from request.state.csrf_token (set by csrf_cookie_middleware
+                 in app/security.py). The server compares this value
+                 against the csrf_token COOKIE on submit - see
+                 validate_csrf_token - and rejects the request if they do
+                 not match. -->
+            <form method="post" action="/login">
+                <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+                <div class="mb-3">
+                    <label class="form-label" for="email">Email</label>
+                    <input class="form-control" id="email" name="email" type="email" required>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label" for="password">{{ "Κωδικός πρόσβασης" if current_lang == "el" else "Password" }}</label>
+                    <input class="form-control" id="password" name="password" type="password" required>
+                </div>
+                <button class="btn btn-success w-100" type="submit">{{ "Σύνδεση" if current_lang == "el" else "Log in" }}</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

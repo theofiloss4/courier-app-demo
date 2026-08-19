@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+<!--
+  Public tracking result: current status plus the full event timeline for
+  one shipment (see tracking_result in app/routers/tracking.py). No login
+  required and no sensitive data shown (no phone numbers, no internal ids,
+  no pricing) - only what a courier company would normally expose on a
+  public tracking page. Note this template intentionally does NOT show
+  the sender/recipient's contact details, unlike the staff-only
+  shipments/detail.html which shows the full record.
+-->
+{% block title %}{{ "Αποστολή" if current_lang == "el" else "Shipment" }} {{ shipment.tracking_number }} - Courier App Demo{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="card tracking-card p-4 p-md-5 mx-auto" style="max-width: 760px;">
+        <p class="text-secondary mb-1">{{ "Αριθμός tracking" if current_lang == "el" else "Tracking number" }}</p>
+        <div class="d-flex justify-content-between align-items-start">
+            <h1 class="h3 fw-bold">{{ shipment.tracking_number }}</h1>
+            <span class="status-badge">{{ status_labels.get(shipment.status, shipment.status.value) }}</span>
+        </div>
+        <hr class="my-4">
+        <p><strong>{{ "Προορισμός:" if current_lang == "el" else "Destination:" }}</strong> {{ shipment.delivery_address }}</p>
+        <h2 class="h5 fw-bold mt-4 mb-4">{{ "Πορεία αποστολής" if current_lang == "el" else "Shipment journey" }}</h2>
+        <div class="timeline">
+            {% for event in events %}
+            <div class="timeline-item">
+                <div class="fw-semibold">{{ status_labels.get(event.status, event.status.value) }}</div>
+                {% if event.location %}<div>{{ event.location }}</div>{% endif %}
+                {% if event.description %}<div class="text-secondary">{{ event.description }}</div>{% endif %}
+                <small class="text-secondary">{{ event.created_at.strftime("%d %b %Y, %H:%M") }}</small>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

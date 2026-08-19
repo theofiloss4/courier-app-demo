@@ -1,0 +1,32 @@
+<!doctype html>
+<!--
+  Print-oriented A5 acceptance receipt, handed to the customer at drop-off.
+  Also stands alone (no base.html/navigation), same reasoning as
+  voucher.html. Explicitly states this is NOT a fiscal/tax receipt and that
+  payment happens on the store's external POS - the app itself never
+  records an actual payment, only the indicative amount_eur figure.
+-->
+<html lang="el"><head><meta charset="utf-8"><title>Receipt {{ shipment.tracking_number }}</title>
+<style>
+@page { size: A5; margin: 12mm; } body { font-family: Arial, sans-serif; color: #222; }
+h1 { color: #c2410c; } table { width: 100%; border-collapse: collapse; } td { padding: 8px; border-bottom: 1px solid #ddd; } td:first-child { font-weight: bold; width: 42%; }
+.total { font-size: 22px; font-weight: bold; text-align: right; margin-top: 18px; }.actions { margin-bottom: 20px; } @media print { .actions { display:none; } }
+</style></head><body>
+<div class="actions"><button onclick="window.print()">Εκτύπωση / Print</button></div>
+<h1>Courier App Demo</h1><h2>Αποδεικτικό παραλαβής / Acceptance receipt</h2>
+<table>
+<tr><td>Tracking</td><td>{{ shipment.tracking_number }}</td></tr>
+<tr><td>Αποστολέας / Sender</td><td>{{ shipment.sender_name }} · {{ shipment.sender_email }}</td></tr>
+<tr><td>Παραλήπτης / Recipient</td><td>{{ shipment.recipient_name }}</td></tr>
+<tr><td>Προορισμός / Destination</td><td>{{ shipment.delivery_address }}</td></tr>
+<tr><td>Πραγματικό βάρος / Actual</td><td>{{ "%.2f"|format(shipment.weight_kg) }} kg</td></tr>
+<tr><td>Ογκομετρικό / Volumetric</td><td>{{ "%.2f"|format(shipment.volumetric_weight_kg) }} kg</td></tr>
+<tr><td>Χρεώσιμο / Chargeable</td><td>{{ "%.2f"|format(shipment.chargeable_weight_kg) }} kg</td></tr>
+<tr><td>Ημερομηνία / Date</td><td>{{ shipment.created_at.strftime("%d/%m/%Y %H:%M") }}</td></tr>
+</table>
+<div class="total">Ενδεικτική χρέωση / Indicative charge: {{ "%.2f"|format(shipment.amount_eur) }} €</div>
+<p>Η πληρωμή πραγματοποιείται στο εξωτερικό POS του καταστήματος και δεν καταχωρίζεται στην εφαρμογή.<br>
+Payment is completed using the store's external POS and is not recorded in the application.</p>
+<p>Το παρόν αποτελεί αποδεικτικό παραλαβής αποστολής και όχι φορολογική απόδειξη.<br>
+This document confirms parcel acceptance and is not a fiscal receipt.</p>
+</body></html>

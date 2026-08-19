@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+<!--
+  Staff management list (Admin/Supervisor only - see staff_list in
+  app/routers/accounts.py). Each row's "Deactivate/Activate" and password
+  reset forms are shown ONLY when `member.id` is present in
+  `manageable_staff_ids` - a set computed server-side from can_manage_staff,
+  so the buttons a viewer sees always match what they are actually allowed
+  to do (the route itself still re-checks permission on submit regardless).
+-->
+{% block title %}{{ "Προσωπικό" if current_lang == "el" else "Staff" }} - Courier App Demo{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 fw-bold">{{ "Διαχείριση προσωπικού" if current_lang == "el" else "Staff management" }}</h1>
+        <a class="btn btn-success" href="/staff/new">{{ "Νέος λογαριασμός" if current_lang == "el" else "New account" }}</a>
+    </div>
+    <div class="card content-card"><div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead><tr><th>{{ "Όνομα" if current_lang == "el" else "Name" }}</th><th>Email</th><th>{{ "Ρόλος" if current_lang == "el" else "Role" }}</th><th>{{ "Κατάσταση" if current_lang == "el" else "Status" }}</th><th></th></tr></thead>
+            <tbody>{% for member in staff %}
+                <tr>
+                    <td>{{ member.full_name }}</td><td>{{ member.email }}</td>
+                    <td>
+                        {% if member.role.value == "employee" %}{{ "Υπάλληλος" if current_lang == "el" else "Employee" }}
+                        {% elif member.role.value == "admin" %}{{ "Διαχειριστής" if current_lang == "el" else "Admin" }}
+                        {% elif member.role.value == "supervisor" %}Supervisor
+                        {% else %}{{ member.role.value }}{% endif %}
+                    </td>
+                    <td>{{ "Ενεργός" if member.is_active and current_lang == "el" else ("Active" if member.is_active else ("Ανενεργός" if current_lang == "el" else "Inactive")) }}</td>
+                    <td>
+                        {% if member.id in manageable_staff_ids %}
+                        <form method="post" action="/staff/{{ member.id }}/toggle">
+                            <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+                            <button class="btn btn-sm btn-outline-secondary">{{ "Απενεργοποίηση" if member.is_active and current_lang == "el" else ("Deactivate" if member.is_active else ("Ενεργοποίηση" if current_lang == "el" else "Activate")) }}</button>
+                        </form>
+                        <form class="d-flex gap-1 mt-2" method="post" action="/staff/{{ member.id }}/password">
+                            <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+                            <input class="form-control form-control-sm" name="new_password" type="password" minlength="8" placeholder="{{ 'Νέος κωδικός' if current_lang == 'el' else 'New password' }}" required>
+                            <button class="btn btn-sm btn-outline-secondary">{{ "Reset" }}</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}</tbody>
+        </table>
+    </div></div>
+</div>
+{% endblock %}

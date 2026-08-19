@@ -1,0 +1,117 @@
+/*
+ * Local stylesheet layered on top of Bootstrap 5 (loaded from a CDN in
+ * base.html). Rather than overriding Bootstrap classes with brand-new CSS
+ * rules everywhere, this file mostly REMAPS Bootstrap's own CSS custom
+ * properties (like --bs-btn-bg further below) so existing Bootstrap
+ * classes (.btn-success, .text-success, ...) automatically pick up this
+ * project's orange brand color without needing custom class names on
+ * every element.
+ */
+
+/* Shared color tokens used by the public and authenticated page layouts. */
+:root {
+    --brand: #f97316;
+    --brand-dark: #c2410c;
+    --brand-soft: #ffedd5;
+    --brand-light: #fdba74;
+    --ink: #17313a;
+    --paper: #fffaf5;
+}
+
+body {
+    background: var(--paper);
+    color: var(--ink);
+}
+
+.navbar-brand {
+    font-weight: 800;
+    letter-spacing: -0.03em;
+}
+
+/* Landing-page hero uses the project brand gradient and responsive headline size. */
+.hero {
+    padding: 6rem 0;
+    background:
+        radial-gradient(circle at 85% 20%, rgba(249, 115, 22, 0.32), transparent 30%),
+        linear-gradient(135deg, #111827, #431407);
+    color: white;
+}
+
+.hero h1 {
+    max-width: 780px;
+    font-size: clamp(2.4rem, 6vw, 4.8rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.05em;
+}
+
+/* Reusable card surfaces keep tracking, account, and staff screens visually consistent. */
+.tracking-card,
+.content-card {
+    border: 0;
+    border-radius: 1rem;
+    box-shadow: 0 1rem 3rem rgba(15, 23, 42, 0.08);
+}
+
+.status-badge {
+    display: inline-flex;
+    padding: 0.4rem 0.7rem;
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand-dark);
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+/* Timeline styles render chronological shipment events as a vertical sequence. */
+.timeline {
+    border-left: 2px solid var(--brand-light);
+    margin-left: 0.5rem;
+    padding-left: 1.5rem;
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 1.5rem;
+}
+
+/* The small filled circle marking each timeline entry, positioned to sit
+   on top of the .timeline element's left border defined above. */
+.timeline-item::before {
+    content: "";
+    position: absolute;
+    left: -1.9rem;
+    top: 0.25rem;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    background: var(--brand);
+}
+
+.text-success {
+    color: var(--brand-dark) !important;
+}
+
+.bg-success,
+.text-bg-success {
+    background-color: var(--brand) !important;
+}
+
+/* Bootstrap success variants are remapped to the application brand color. */
+.btn-success {
+    --bs-btn-bg: var(--brand);
+    --bs-btn-border-color: var(--brand);
+    --bs-btn-hover-bg: var(--brand-dark);
+    --bs-btn-hover-border-color: var(--brand-dark);
+    --bs-btn-active-bg: var(--brand-dark);
+    --bs-btn-active-border-color: var(--brand-dark);
+}
+
+a {
+    color: var(--brand-dark);
+}
+
+a:hover {
+    color: #9a3412;
+}

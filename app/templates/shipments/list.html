@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+<!--
+  Staff shipment management table (any staff role - see shipment_list in
+  app/routers/shipments.py). `status_labels` is a language-appropriate
+  dict (Greek or English display text keyed by ShipmentStatus, see
+  status_labels_for) so the raw Enum value is never shown to the user directly.
+-->
+{% block title %}{{ "Αποστολές" if current_lang == "el" else "Shipments" }} - Courier App Demo{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <p class="text-success fw-semibold mb-1">{{ "ΔΙΑΧΕΙΡΙΣΗ" if current_lang == "el" else "MANAGEMENT" }}</p>
+            <h1 class="fw-bold mb-0">{{ "Αποστολές" if current_lang == "el" else "Shipments" }}</h1>
+        </div>
+        <a class="btn btn-success" href="/shipments/new">{{ "Νέα αποστολή" if current_lang == "el" else "New shipment" }}</a>
+    </div>
+    <div class="card content-card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                <tr>
+                    <th class="ps-4">Tracking</th>
+                    <th>{{ "Παραλήπτης" if current_lang == "el" else "Recipient" }}</th>
+                    <th>{{ "Προορισμός" if current_lang == "el" else "Destination" }}</th>
+                    <th>{{ "Κατάσταση" if current_lang == "el" else "Status" }}</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for shipment in shipments %}
+                <tr>
+                    <td class="ps-4 fw-semibold">{{ shipment.tracking_number }}</td>
+                    <td>{{ shipment.recipient_name }}</td>
+                    <td>{{ shipment.delivery_address }}</td>
+                    <td><span class="status-badge">{{ status_labels.get(shipment.status, shipment.status.value) }}</span></td>
+                    <td><a href="/shipments/{{ shipment.id }}">{{ "Προβολή" if current_lang == "el" else "View" }}</a></td>
+                </tr>
+                {% else %}
+                <tr><td class="text-center text-secondary py-5" colspan="5">{{ "Δεν υπάρχουν αποστολές." if current_lang == "el" else "No shipments found." }}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,99 @@
+# =============================================================================
+# Docker Compose definition for the full local/demo stack: the FastAPI
+# application itself, its PostgreSQL database, and Mailpit (a fake SMTP
+# server with a web inbox, used so no real emails are ever sent locally).
+# `docker compose up --build -d` builds the app image (see Dockerfile) and
+# starts all three services together; `docker compose down` stops them
+# while keeping the named PostgreSQL volume, so data survives a restart.
+# =============================================================================
+# Docker Compose project name keeps local container and volume names predictable.
+name: courierflow
+
+services:
+  # FastAPI web process, connected to PostgreSQL and the local SMTP inbox.
+  application:
+    # Builds the image from the Dockerfile in this directory rather than
+    # pulling a pre-built image.
+    build: .
+    # Every value here uses the ${VAR:-default} shell syntax: if a .env
+    # file (or the real environment) sets VAR, that value is used;
+    # otherwise the value after ":-" is used as a safe local-development
+    # fallback. This lets the same compose file work whether or not a
+    # .env file has been created yet.
+    environment:
+      APP_NAME: ${APP_NAME:-Courier App Demo}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      SECRET_KEY: ${SECRET_KEY:-local-development-secret-change-before-deployment}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-courier}:${POSTGRES_PASSWORD:-courier}@database:5432/${POSTGRES_DB:-courier_db}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-480}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      VOLUMETRIC_DIVISOR: ${VOLUMETRIC_DIVISOR:-5000}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8001}
+      SMTP_HOST: ${DOCKER_SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-no-reply@courier-app-demo.local}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-false}
+    ports:
+      # host:container - the app is reachable at http://localhost:8001
+      # from outside Docker even though it listens on 8001 inside the container.
+      - "8001:8001"
+    # `depends_on` with a `condition` makes Compose wait for the dependency
+    # to actually be ready (not just "started") before starting this
+    # service - starting the app before PostgreSQL can accept connections
+    # would otherwise cause a crash-on-boot failure.
+    depends_on:
+      database:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    # Calls the same GET /health endpoint defined in app/main.py; Compose
+    # uses this to know when the container is truly ready, and to restart
+    # it automatically if it starts failing.
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health')"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL persists application data in the named Docker volume below.
+  database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-courier_db}
+      POSTGRES_USER: ${POSTGRES_USER:-courier}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-courier}
+    ports:
+      - "5432:5432"
+    # Data written by PostgreSQL is stored on this named volume, NOT inside
+    # the container's own filesystem - the container can be destroyed and
+    # recreated (e.g. by `docker compose up --build`) without losing data;
+    # only `docker compose down -v` removes the volume itself.
+    volumes:
+      - courier_postgres_data:/var/lib/postgresql/data
+    # pg_isready checks whether PostgreSQL is actually accepting
+    # connections yet - what the `application` service's depends_on above
+    # waits for before starting.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Mailpit captures development emails without sending them to real recipients.
+  mailpit:
+    image: axllent/mailpit:v1.30.0
+    ports:
+      # 8025: the web inbox UI (open http://localhost:8025 to see captured emails).
+      # 1025: the SMTP port the application actually connects to and sends mail through.
+      - "8025:8025"
+      - "1025:1025"
+
+volumes:
+  # Named volume survives `docker compose down` unless `-v` is explicitly used.
+  courier_postgres_data:

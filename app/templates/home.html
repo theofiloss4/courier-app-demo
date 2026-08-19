@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+<!-- Public landing page with the tracking entry form and customer-account call to action. -->
+{% block title %}Courier App Demo - {{ "Παρακολούθηση αποστολής" if current_lang == "el" else "Shipment tracking" }}{% endblock %}
+{% block content %}
+<section class="hero">
+    <div class="container">
+        <span class="badge text-bg-success mb-4">{{ "Άμεση ενημέρωση αποστολών" if current_lang == "el" else "Live shipment updates" }}</span>
+        <h1>{{ "Κάθε αποστολή, σε πλήρη έλεγχο." if current_lang == "el" else "Every shipment, fully under control." }}</h1>
+        <p class="lead mt-4 mb-5 col-lg-6 text-white-50">
+            {{ "Παρακολουθήστε την πορεία ενός δέματος από την καταχώριση μέχρι την τελική παράδοση, με πλήρες και ευανάγνωστο ιστορικό." if current_lang == "el" else "Follow a parcel from registration to final delivery with a complete, easy-to-read history." }}
+        </p>
+        <!-- No server round-trip needed for this "form": submitting it
+             just navigates the browser straight to
+             GET /track/{tracking_number} (see app/routers/tracking.py),
+             so it is a plain client-side redirect, not a POST. -->
+        <form class="row g-2 col-lg-7" onsubmit="event.preventDefault(); window.location='/track/' + encodeURIComponent(this.tracking.value.trim())">
+            <div class="col-md-8">
+                <label class="visually-hidden" for="tracking">{{ "Αριθμός tracking" if current_lang == "el" else "Tracking number" }}</label>
+                <input class="form-control form-control-lg" id="tracking" name="tracking"
+                       placeholder="{{ 'Εισαγάγετε αριθμό tracking' if current_lang == 'el' else 'Enter tracking number' }}" required>
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-success btn-lg w-100" type="submit">{{ "Αναζήτηση" if current_lang == "el" else "Track" }}</button>
+            </div>
+        </form>
+        <a href="/register" class="card mt-5 text-decoration-none text-dark border-0 shadow-sm col-lg-7">
+            <div class="card-body p-4">
+                {% if current_lang == "el" %}
+                    <h2 class="h5 fw-bold">Θέλετε να κρατάτε το ιστορικό των αποστολών σας;</h2>
+                    <p class="mb-0">Δημιουργήστε δωρεάν λογαριασμό για να βλέπετε όλες τις αποστολές σας και το ιστορικό τους. Η αποστολή και η παραλαβή δεμάτων πραγματοποιούνται στο κατάστημα.</p>
+                {% else %}
+                    <h2 class="h5 fw-bold">Would you like to keep your shipment history?</h2>
+                    <p class="mb-0">Create a free account to view all your shipments and their history. Parcels are sent and collected at the store.</p>
+                {% endif %}
+            </div>
+        </a>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+<!--
+  "Register a new shipment" form used by staff at the counter (see
+  create_shipment in app/routers/shipments.py). Every field below has BOTH
+  a client-side HTML constraint (pattern/min/max, purely a UX nicety that
+  gives instant feedback) AND a matching server-side check in
+  ShipmentCreate (app/schemas/shipment.py) - the server-side check is the
+  one that actually matters for security, since HTML validation can always
+  be bypassed. `form_data` repopulates every field after a validation
+  error so nothing already typed is lost.
+-->
+{% block title %}{{ "Νέα αποστολή" if current_lang == "el" else "New shipment" }} - Courier App Demo{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="card content-card p-4 mx-auto" style="max-width: 840px;">
+        <div class="card-body">
+            <h1 class="h2 fw-bold">{{ "Καταχώριση αποστολής" if current_lang == "el" else "Create shipment" }}</h1>
+            <p class="text-secondary mb-4">{{ "Η καταχώριση γίνεται από το προσωπικό στο κατάστημα, μετά τη ζύγιση και ογκομέτρηση του δέματος." if current_lang == "el" else "Staff register the shipment at the store after weighing and measuring the parcel." }}</p>
+            {% if errors %}
+            <div class="alert alert-danger">
+                <ul class="mb-0">
+                    {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            <form method="post" action="/shipments" class="row g-3">
+                <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+                <div class="col-md-6">
+                    <label class="form-label" for="sender_name">{{ "Ονοματεπώνυμο αποστολέα" if current_lang == "el" else "Sender full name" }}</label>
+                    <input class="form-control" id="sender_name" name="sender_name"
+                           value="{{ form_data.sender_name if form_data else '' }}"
+                           minlength="2" maxlength="120" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="sender_email">{{ "Email αποστολέα" if current_lang == "el" else "Sender email" }}</label>
+                    <input class="form-control" id="sender_email" name="sender_email" type="email"
+                           value="{{ form_data.sender_email if form_data else '' }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="sender_phone">{{ "Τηλέφωνο αποστολέα" if current_lang == "el" else "Sender phone" }}</label>
+                    <input class="form-control" id="sender_phone" name="sender_phone"
+                           value="{{ form_data.sender_phone if form_data else '' }}"
+                           inputmode="tel" maxlength="20"
+                           pattern="(?:\+30[\s.-]?)?(?:2(?:[\s.-]?\d){9}|69(?:[\s.-]?\d){8})"
+                           title="{{ 'Ελληνικό σταθερό 10 ψηφίων ή κινητό που αρχίζει από 69.' if current_lang == 'el' else 'A 10-digit Greek landline or mobile number starting with 69.' }}"
+                           placeholder="{{ '2101234567 ή 6912345678' if current_lang == 'el' else '2101234567 or 6912345678' }}" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="sender_address">{{ "Διεύθυνση αποστολέα" if current_lang == "el" else "Sender address" }}</label>
+                    <input class="form-control" id="sender_address" name="sender_address"
+                           value="{{ form_data.sender_address if form_data else '' }}"
+                           minlength="5" maxlength="255" pattern=".*[0-9].*"
+                           title="{{ 'Η διεύθυνση πρέπει να περιλαμβάνει αριθμό.' if current_lang == 'el' else 'The address must include a street number.' }}"
+                           placeholder="{{ 'Πατησίων 100, Αθήνα' if current_lang == 'el' else '100 Patision Street, Athens' }}" required>
+                </div>
+                <div class="col-12"><hr><h2 class="h5 fw-bold">{{ "Στοιχεία δέματος" if current_lang == "el" else "Parcel details" }}</h2></div>
+                <div class="col-md-4">
+                    <label class="form-label" for="weight_kg">{{ "Πραγματικό βάρος (kg)" if current_lang == "el" else "Actual weight (kg)" }}</label>
+                    <input class="form-control" id="weight_kg" name="weight_kg" type="number" step="0.01" min="0.01" value="{{ form_data.weight_kg if form_data else '' }}" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="length_cm">{{ "Μήκος (cm)" if current_lang == "el" else "Length (cm)" }}</label>
+                    <input class="form-control" id="length_cm" name="length_cm" type="number" step="0.1" min="0.1" value="{{ form_data.length_cm if form_data else '' }}" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="width_cm">{{ "Πλάτος (cm)" if current_lang == "el" else "Width (cm)" }}</label>
+                    <input class="form-control" id="width_cm" name="width_cm" type="number" step="0.1" min="0.1" value="{{ form_data.width_cm if form_data else '' }}" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="height_cm">{{ "Ύψος (cm)" if current_lang == "el" else "Height (cm)" }}</label>
+                    <input class="form-control" id="height_cm" name="height_cm" type="number" step="0.1" min="0.1" value="{{ form_data.height_cm if form_data else '' }}" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="amount_eur">{{ "Ενδεικτική χρέωση (€)" if current_lang == "el" else "Indicative charge (€)" }}</label>
+                    <input class="form-control" id="amount_eur" name="amount_eur" type="number" step="0.01" min="0" value="{{ form_data.amount_eur if form_data else '' }}" required>
+                    <div class="form-text">{{ "Δεν καταχωρίζεται πληρωμή. Η συναλλαγή γίνεται στο εξωτερικό POS." if current_lang == "el" else "No payment is recorded. The transaction is completed using the external POS." }}</div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="parcel_description">{{ "Περιγραφή περιεχομένου" if current_lang == "el" else "Contents description" }}</label>
+                    <input class="form-control" id="parcel_description" name="parcel_description" maxlength="255" value="{{ form_data.parcel_description if form_data else '' }}">
+                    <div class="form-text">{{ "Το ογκομετρικό βάρος υπολογίζεται αυτόματα: Μήκος × Πλάτος × Ύψος ÷ 5000." if current_lang == "el" else "Volumetric weight is calculated automatically: Length × Width × Height ÷ 5000." }}</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="recipient_name">{{ "Ονοματεπώνυμο παραλήπτη" if current_lang == "el" else "Recipient full name" }}</label>
+                    <input class="form-control" id="recipient_name" name="recipient_name"
+                           value="{{ form_data.recipient_name if form_data else '' }}"
+                           minlength="2" maxlength="120" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="recipient_phone">{{ "Τηλέφωνο παραλήπτη" if current_lang == "el" else "Recipient phone" }}</label>
+                    <input class="form-control" id="recipient_phone" name="recipient_phone"
+                           value="{{ form_data.recipient_phone if form_data else '' }}"
+                           inputmode="tel" maxlength="20"
+                           pattern="(?:\+30[\s.-]?)?(?:2(?:[\s.-]?\d){9}|69(?:[\s.-]?\d){8})"
+                           title="{{ 'Ελληνικό σταθερό 10 ψηφίων ή κινητό που αρχίζει από 69.' if current_lang == 'el' else 'A 10-digit Greek landline or mobile number starting with 69.' }}"
+                           placeholder="{{ '2101234567 ή 6912345678' if current_lang == 'el' else '2101234567 or 6912345678' }}" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="delivery_address">{{ "Διεύθυνση παράδοσης" if current_lang == "el" else "Delivery address" }}</label>
+                    <input class="form-control" id="delivery_address" name="delivery_address"
+                           value="{{ form_data.delivery_address if form_data else '' }}"
+                           minlength="5" maxlength="255" pattern=".*[0-9].*"
+                           title="{{ 'Η διεύθυνση πρέπει να περιλαμβάνει αριθμό.' if current_lang == 'el' else 'The address must include a street number.' }}"
+                           placeholder="{{ 'Ακτή Μιαούλη 25, Πειραιάς' if current_lang == 'el' else '25 Akti Miaouli, Piraeus' }}" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="notes">{{ "Σημειώσεις" if current_lang == "el" else "Notes" }}</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="3"
+                              maxlength="1000">{{ form_data.notes if form_data else '' }}</textarea>
+                </div>
+                <div class="col-12 d-flex justify-content-end gap-2">
+                    <a class="btn btn-light" href="/shipments">{{ "Ακύρωση" if current_lang == "el" else "Cancel" }}</a>
+                    <button class="btn btn-success" type="submit">{{ "Δημιουργία αποστολής" if current_lang == "el" else "Create shipment" }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

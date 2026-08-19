@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+<!--
+  error.html — the ONE template rendered for every HtmlError raised
+  anywhere in the app (see the render_html_error exception handler in
+  app/main.py). `status_code`, `title`, and `message` are supplied by
+  whichever HtmlError was raised, already picked in the correct language -
+  this template itself does no language branching, just displays the
+  values it was given.
+-->
+{% block title %}{{ title }} - Courier App Demo{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="card content-card mx-auto p-4" style="max-width: 620px;">
+        <div class="card-body text-center">
+            <p class="display-6 fw-bold text-secondary mb-3">{{ status_code }}</p>
+            <h1 class="h3 fw-bold">{{ title }}</h1>
+            <p class="text-secondary mt-3 mb-4">{{ message }}</p>
+            <a class="btn btn-success" href="/">{{ "Επιστροφή στην αρχική" if current_lang == "el" else "Return home" }}</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

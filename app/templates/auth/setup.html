@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+<!--
+  One-time setup form that creates the initial Supervisor account.
+  Rendered by GET /setup only while no Supervisor exists yet (see
+  setup_page in app/routers/accounts.py) - reachable with no login, since
+  there is no admin to authenticate as on a brand-new deployment.
+-->
+{% block title %}Initial setup - Courier App Demo{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="card content-card mx-auto p-4" style="max-width: 520px;">
+        <div class="card-body">
+            <h1 class="h3 fw-bold mb-2">{{ "Αρχική ρύθμιση" if current_lang == "el" else "Initial setup" }}</h1>
+            <p class="text-secondary">{{ "Δημιουργήστε τον πρώτο Supervisor. Η σελίδα κλειδώνει αυτόματα μετά τη δημιουργία του." if current_lang == "el" else "Create the first Supervisor. This page locks automatically afterwards." }}</p>
+            {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+            <form method="post" action="/setup">
+                <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+                <input class="form-control mb-3" name="full_name" placeholder="{{ 'Ονοματεπώνυμο' if current_lang == 'el' else 'Full name' }}" required>
+                <input class="form-control mb-3" name="email" type="email" placeholder="Email" required>
+                <input class="form-control mb-3" name="password" type="password" minlength="8" placeholder="{{ 'Κωδικός πρόσβασης' if current_lang == 'el' else 'Password' }}" required>
+                <button class="btn btn-success w-100" type="submit">{{ "Δημιουργία Supervisor" if current_lang == "el" else "Create Supervisor" }}</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

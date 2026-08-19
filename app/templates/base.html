@@ -1,0 +1,88 @@
+<!doctype html>
+<!--
+  base.html - the shared page shell every other template extends via the
+  "extends base.html" directive at the top of each child file. Provides
+  the head section (Bootstrap CDN + local styles.css), the top navigation
+  bar (logo, tracking link, login/account links that change based on
+  whether `user` is logged in, staff-only "Προσωπικό/Staff" link, logout
+  form, and the EL/EN language switcher), and one empty content block that
+  each child template fills in with its own page-specific body. `user` and
+  `request` are supplied by every router via template_context()/
+  TemplateResponse (see app/i18n.py).
+
+  NOTE for future edits: never write a literal "curly-brace-percent" tag
+  inside an HTML comment as descriptive prose (as this comment avoids doing
+  above) - Jinja2 scans the whole file for its own delimiters regardless of
+  HTML comment boundaries, so typing the real tag syntax here would be
+  parsed as an actual (and likely unmatched) template tag.
+-->
+<!-- Falls back to the "language" cookie's value (defaulting to Greek)
+     whenever a specific template did not already set `lang` itself. -->
+{% set current_lang = lang|default(request.cookies.get('language', 'el')) %}
+<html lang="{{ current_lang }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Child templates override this by defining their own title block. -->
+    <title>{% block title %}Courier App Demo{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- ?v=2 is a simple cache-busting query string: bump it whenever
+         styles.css changes, so browsers do not keep serving a stale
+         cached copy of the stylesheet. -->
+    <link href="{{ url_for('static', path='/css/styles.css') }}?v=2" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg bg-white border-bottom">
+    <div class="container">
+        <a class="navbar-brand text-success" href="/">Courier App Demo</a>
+        <div class="d-flex gap-2 align-items-center">
+            <!-- Public tracking link is always shown, logged in or not. -->
+            <a class="btn btn-link text-dark" href="/track">{{ "Αναζήτηση αποστολής" if current_lang == "el" else "Track shipment" }}</a>
+            {% if user %}
+                <!-- Logged-in view: greet by name, then branch the main
+                     nav link based on role (Customer -> their dashboard,
+                     any staff role -> the shipment management screen). -->
+                <span class="small text-secondary">{{ user.full_name }}</span>
+                {% if user.role.value == "customer" %}
+                    <a class="btn btn-link text-dark" href="/account">{{ "Ο λογαριασμός μου" if current_lang == "el" else "My account" }}</a>
+                {% else %}
+                    <a class="btn btn-link text-dark" href="/shipments">{{ "Αποστολές" if current_lang == "el" else "Shipments" }}</a>
+                {% endif %}
+                <!-- Staff management link is only shown to roles that are
+                     actually allowed to open it (see require_html_staff_manager
+                     in app/dependencies.py) - hiding it for other roles is
+                     a UX nicety, NOT the real security boundary (the route
+                     itself is still protected server-side either way). -->
+                {% if user.role.value in ["admin", "supervisor"] %}
+                    <a class="btn btn-link text-dark" href="/staff">{{ "Προσωπικό" if current_lang == "el" else "Staff" }}</a>
+                {% endif %}
+                <!-- Logout is a POST form (not a plain link) specifically
+                     so it can carry the CSRF token - logging someone out
+                     via a bare GET link could otherwise be triggered by a
+                     third-party page embedding an <img> pointing at it. -->
+                <form method="post" action="/logout">
+                    <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+                    <button class="btn btn-outline-secondary" type="submit">{{ "Αποσύνδεση" if current_lang == "el" else "Log out" }}</button>
+                </form>
+            {% else %}
+                <!-- Anonymous view: register/login links only. -->
+                <a class="btn btn-link text-dark" href="/register">{{ "Εγγραφή" if current_lang == "el" else "Register" }}</a>
+                <a class="btn btn-success" href="/login">{{ "Σύνδεση" if current_lang == "el" else "Log in" }}</a>
+            {% endif %}
+            <!-- Language switch buttons - each is a plain GET link to
+                 /language/{el|en} (see change_language in
+                 app/routers/accounts.py), which sets a cookie and redirects
+                 back to whatever page linked here. -->
+            <div class="btn-group" aria-label="{{ 'Επιλογή γλώσσας' if current_lang == 'el' else 'Language selection' }}">
+                <a class="btn btn-sm {{ 'btn-success' if current_lang == 'el' else 'btn-outline-secondary' }}" href="/language/el" title="Ελληνικά">🇬🇷</a>
+                <a class="btn btn-sm {{ 'btn-success' if current_lang == 'en' else 'btn-outline-secondary' }}" href="/language/en" title="English">🇬🇧</a>
+            </div>
+        </div>
+    </div>
+</nav>
+<main>
+    <!-- Every page-specific template's content is injected here. -->
+    {% block content %}{% endblock %}
+</main>
+</body>
+</html>

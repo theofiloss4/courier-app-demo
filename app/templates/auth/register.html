@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+<!-- Public registration form for customer accounts only. -->
+{% block title %}{{ "Εγγραφή πελάτη" if current_lang == "el" else "Customer registration" }} - Courier App Demo{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="card content-card mx-auto p-4" style="max-width: 520px;">
+        <div class="card-body">
+            <h1 class="h3 fw-bold mb-2">{{ "Δημιουργία λογαριασμού" if current_lang == "el" else "Create an account" }}</h1>
+            <p class="text-secondary mb-4">{{ "Κρατήστε οργανωμένο το ιστορικό των αποστολών σας." if current_lang == "el" else "Keep your shipment history organised." }}</p>
+            {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+            <form method="post" action="/register">
+                <!-- See auth/login.html for how the CSRF token pattern works. -->
+                <input type="hidden" name="csrf_token" value="{{ request.state.csrf_token }}">
+                <div class="mb-3">
+                    <label class="form-label" for="full_name">{{ "Ονοματεπώνυμο" if current_lang == "el" else "Full name" }}</label>
+                    <!-- form_data (set by create_user_response on
+                         validation failure, see app/routers/accounts.py)
+                         repopulates the name/email the visitor already
+                         typed, so a validation error does not force them
+                         to retype everything. -->
+                    <input class="form-control" id="full_name" name="full_name" value="{{ form_data.full_name if form_data else '' }}" maxlength="120" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="email">Email</label>
+                    <input class="form-control" id="email" name="email" type="email" value="{{ form_data.email if form_data else '' }}" required>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label" for="password">{{ "Κωδικός πρόσβασης" if current_lang == "el" else "Password" }}</label>
+                    <input class="form-control" id="password" name="password" type="password" minlength="8" required>
+                    <div class="form-text">{{ "Τουλάχιστον 8 χαρακτήρες, ένα γράμμα και ένας αριθμός." if current_lang == "el" else "At least 8 characters, one letter and one number." }}</div>
+                </div>
+                <button class="btn btn-success w-100" type="submit">{{ "Εγγραφή" if current_lang == "el" else "Register" }}</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
