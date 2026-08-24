@@ -7,9 +7,11 @@
 #   - get_session(): a FastAPI dependency that hands each request its own
 #     database Session, then closes it automatically when the request ends.
 # =============================================================================
+import time
 from collections.abc import Generator
 
 from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 from sqlmodel import Session, SQLModel, create_engine
 
 from app.config import get_settings
@@ -52,6 +54,16 @@ def create_db_and_tables() -> None:
     IF EXISTS guards mean running this function 100 times has the same
     effect as running it once.
     """
+
+    # Docker Compose's `depends_on: condition: service_healthy` only
+    # guarantees that PostgreSQL was accepting connections at the moment
+    # Compose checked - it does NOT guarantee that this container's own
+    # network/DNS setup is instantly resolvable the moment its process
+    # starts (this is a known Docker Desktop/WSL2 timing gap, especially
+    # right after a network was recreated, e.g. after a previous failed
+    # `up` due to a port conflict). Without a retry here, a single
+    # transient hiccup crashes the whole application on boot.
+    _wait_for_database()
 
     # Step 1: create any tables that do not exist at all yet.
     SQLModel.metadata.create_all(engine)
@@ -118,6 +130,31 @@ def create_db_and_tables() -> None:
             connection.execute(text("ALTER TABLE shipment ADD COLUMN IF NOT EXISTS chargeable_weight_kg DOUBLE PRECISION DEFAULT 0"))
             connection.execute(text("ALTER TABLE shipment ADD COLUMN IF NOT EXISTS amount_eur DOUBLE PRECISION DEFAULT 0"))
             connection.execute(text("ALTER TABLE shipment ADD COLUMN IF NOT EXISTS email_sent_at TIMESTAMP WITH TIME ZONE"))
+
+
+def _wait_for_database(max_attempts: int = 30, delay_seconds: float = 1.0) -> None:
+    """Block until the database accepts a connection, retrying transient failures.
+
+    Tries to open (and immediately close) a single connection, retrying on
+    `OperationalError` - the exception SQLAlchemy raises for connection-level
+    failures such as "host not found" (DNS not resolvable yet), "connection
+    refused", or "server not ready". Deliberately does NOT retry other error
+    types (e.g. bad credentials): those are permanent misconfigurations, not
+    timing issues, and should fail fast instead of retrying for 30 seconds.
+
+    With the defaults, this waits up to 30 seconds in total before giving up
+    and re-raising - comfortably longer than the few seconds of DNS/network
+    settling time this is meant to absorb, while still failing loudly if the
+    database is genuinely unreachable (wrong host, firewall, etc.).
+    """
+    for attempt in range(1, max_attempts + 1):
+        try:
+            with engine.connect():
+                return
+        except OperationalError:
+            if attempt == max_attempts:
+                raise
+            time.sleep(delay_seconds)
 
 
 def get_session() -> Generator[Session, None, None]:

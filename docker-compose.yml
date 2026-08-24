@@ -15,6 +15,12 @@ services:
     # Builds the image from the Dockerfile in this directory rather than
     # pulling a pre-built image.
     build: .
+    # If the process crashes (e.g. a transient database-connection failure
+    # right at boot), Docker restarts the container automatically instead
+    # of leaving it dead until someone notices and runs a manual restart.
+    # Combined with the retry logic in app/database.py, a crash on boot is
+    # now a self-healing few-second blip rather than a hard failure.
+    restart: on-failure:5
     # Every value here uses the ${VAR:-default} shell syntax: if a .env
     # file (or the real environment) sets VAR, that value is used;
     # otherwise the value after ":-" is used as a safe local-development
@@ -37,8 +43,10 @@ services:
       SMTP_USE_TLS: ${SMTP_USE_TLS:-false}
     ports:
       # host:container - the app is reachable at http://localhost:8001
-      # from outside Docker even though it listens on 8001 inside the container.
-      - "8001:8001"
+      # from outside Docker even though it listens on 8001 inside the
+      # container. The host side is overridable (APP_PORT) so a port
+      # already used by another local project does not block this stack.
+      - "${APP_PORT:-8001}:8001"
     # `depends_on` with a `condition` makes Compose wait for the dependency
     # to actually be ready (not just "started") before starting this
     # service - starting the app before PostgreSQL can accept connections
@@ -64,12 +72,17 @@ services:
   # PostgreSQL persists application data in the named Docker volume below.
   database:
     image: postgres:17-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-courier_db}
       POSTGRES_USER: ${POSTGRES_USER:-courier}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-courier}
     ports:
-      - "5432:5432"
+      # Host port only - overridable (POSTGRES_PORT) if another local
+      # PostgreSQL instance already occupies 5432. Containers always reach
+      # each other over the INTERNAL port 5432 via the "database" hostname
+      # regardless of this mapping, so changing it never affects DATABASE_URL above.
+      - "${POSTGRES_PORT:-5432}:5432"
     # Data written by PostgreSQL is stored on this named volume, NOT inside
     # the container's own filesystem - the container can be destroyed and
     # recreated (e.g. by `docker compose up --build`) without losing data;
@@ -88,11 +101,13 @@ services:
   # Mailpit captures development emails without sending them to real recipients.
   mailpit:
     image: axllent/mailpit:v1.30.0
+    restart: unless-stopped
     ports:
       # 8025: the web inbox UI (open http://localhost:8025 to see captured emails).
       # 1025: the SMTP port the application actually connects to and sends mail through.
-      - "8025:8025"
-      - "1025:1025"
+      # Both host sides are overridable if already in use locally.
+      - "${MAILPIT_WEB_PORT:-8025}:8025"
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
 
 volumes:
   # Named volume survives `docker compose down` unless `-v` is explicitly used.
