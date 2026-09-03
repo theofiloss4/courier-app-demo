@@ -203,6 +203,20 @@ The `courier_postgres_data` named volume keeps users, shipments, and tracking
 events between restarts. Use `docker compose down -v` only when the local data
 must be permanently removed.
 
+If a host port is already used by another local project (for example another
+Dockerized PostgreSQL on port 5432), override just that port in `.env`
+instead of stopping the other project's containers:
+
+```dotenv
+APP_PORT=8001
+POSTGRES_PORT=5432
+MAILPIT_WEB_PORT=8025
+MAILPIT_SMTP_PORT=1025
+```
+
+Only the values that conflict need to be changed. Containers always reach
+each other over their normal internal ports regardless of these overrides.
+
 ## Local Python development
 
 Copy the example configuration and start only PostgreSQL and Mailpit:
@@ -248,6 +262,10 @@ Settings are loaded from environment variables and the optional `.env` file.
 - `SMTP_USERNAME` and `SMTP_PASSWORD`: optional SMTP credentials
 - `SMTP_FROM_EMAIL`: sender address used for voucher messages
 - `SMTP_USE_TLS`: enables SMTP STARTTLS
+- `APP_PORT`, `POSTGRES_PORT`, `MAILPIT_WEB_PORT`, `MAILPIT_SMTP_PORT`:
+  optional Docker Compose host port overrides (see "Quick start with
+  Docker" above); unset by default and only needed to resolve a local port
+  conflict
 
 When `ENVIRONMENT=production`, startup rejects weak secrets and requires
 `COOKIE_SECURE=true`.

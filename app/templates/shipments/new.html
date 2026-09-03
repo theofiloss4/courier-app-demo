@@ -73,7 +73,7 @@
                 <div class="col-md-2">
                     <label class="form-label" for="amount_eur">{{ "Ενδεικτική χρέωση (€)" if current_lang == "el" else "Indicative charge (€)" }}</label>
                     <input class="form-control" id="amount_eur" name="amount_eur" type="number" step="0.01" min="0" value="{{ form_data.amount_eur if form_data else '' }}" required>
-                    <div class="form-text">{{ "Δεν καταχωρίζεται πληρωμή. Η συναλλαγή γίνεται στο εξωτερικό POS." if current_lang == "el" else "No payment is recorded. The transaction is completed using the external POS." }}</div>
+                    <div class="form-text">{{ " Η συναλλαγή γίνεται στο εξωτερικό POS." if current_lang == "el" else "No payment is recorded. The transaction is completed using the external POS." }}</div>
                 </div>
                 <div class="col-12">
                     <label class="form-label" for="parcel_description">{{ "Περιγραφή περιεχομένου" if current_lang == "el" else "Contents description" }}</label>
